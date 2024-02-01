@@ -57,6 +57,14 @@ const topLevelLinks = [
 "https://www.pymnts.com/cryptocurrency-wallet/"
 ]
 
+const addPageToDatabase = async (url, html) => {
+    const link = new URL(url);
+
+    const q = `INSERT INTO pages (url, html) VALUES ('${link.pathname}', ${mysql.escape(html)})
+    ON DUPLICATE KEY UPDATE html = ${mysql.escape(html)}`;
+    return await query(q);
+}
+
 const fetchHtml = async (url) => {
     try {
         const response = await axios.get(url);
@@ -93,9 +101,13 @@ const getLinksFromHtml = html => {
 const getStaticPages = async (url, curPages) => {
     const pages = [];
     
+    // Get top-level page
     let html = await fetchHtml(url);
 
-    pages.push({url, html});
+    let result = await addPageToDatabase(url, html);
+    console.log('result', result);
+
+    pages.push({url, html: ''});
 
     const links = getLinksFromHtml(html);
 
@@ -107,7 +119,8 @@ const getStaticPages = async (url, curPages) => {
         }
         console.log('fetching', links[i]);
         html = await fetchHtml(links[i]);
-        pages.push({url: links[i], html});
+        result = await addPageToDatabase(links[i], html);
+        pages.push({url: links[i], html: ''});
     }
 
     return pages;
@@ -125,4 +138,4 @@ const getAllPages = async () => {
     
 }
 
-//getAllPages();
+getAllPages();
